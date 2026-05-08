@@ -21,8 +21,8 @@ The target department. Valid values are IT, HR, Finance, and Operations.
 
 .PARAMETER TemporaryPassword
 The temporary password assigned to the new account. The user is required to change
-this password at next logon.
-
+this password at next logon. Becuase this is for lab use, the default is a simple password. 
+In a production environment, the temporary password should not be hardcoded into the script.
 .EXAMPLE
 .\New-LabUser.ps1 -FirstName Morgan -LastName Read -Department HR
 
@@ -49,7 +49,7 @@ param (
 
     [Parameter()]
     [ValidateNotNullOrEmpty()]
-    [string]$TemporaryPassword = "Password123!"
+    [string]$TemporaryPassword = "Password123!" #For Lab Use only, do not do this!
 )
 
 $ErrorActionPreference = "Stop"
