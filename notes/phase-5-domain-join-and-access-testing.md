@@ -32,6 +32,17 @@ Domain users were able to log into the workstations successfully.
 
 File share testing confirmed that users had access only to the folders allowed by their group memberships.
 
+## Evidence Gap
+
+The access test results are documented in the matrix above, but Phase 5 does not yet include screenshots or saved command output.
+
+Evidence to add later:
+
+- Windows domain membership screen for `WIN11-01` or `WIN11-02`
+- `whoami` output from a domain user session
+- DNS lookup or ping test showing client resolution through `DC01`
+- Allowed and denied department share access screenshots
+
 ## Default Domain Controller Shares
 
 When browsing `\\DC01`, the `SYSVOL` and `NETLOGON` shares were visible. These are default domain controller shares used by Active Directory for Group Policy, scripts, and domain logon functionality. They were left unchanged.

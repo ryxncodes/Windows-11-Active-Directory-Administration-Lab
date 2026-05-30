@@ -44,6 +44,11 @@ The `Public` share is available to all employees through the `GG_All_Employees` 
 - Public folder allows all employees to modify files.
 - Full user access testing will be completed after domain-joining Windows 11 clients.
 
+Screenshots:
+
+- [`phase-4-operations-folder-permissions.png`](../screenshots/phase-4-operations-folder-permissions.png)
+- [`phase-4-public-folder-permissions.png`](../screenshots/phase-4-public-folder-permissions.png)
+
 ## Issue Encountered - Public Share Not Visible
 
 ### Symptom
@@ -59,6 +64,7 @@ The `C:\Shares\Public` folder had NTFS permissions configured but had not been s
 
 ### Fix
 Enabled sharing on `C:\Shares\Public` and configured the share name as `Public`.
+
 ### Verification
 Browsing to `\\DC01` showed both custom shares:
 - `Departments`

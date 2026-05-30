@@ -19,6 +19,7 @@ All groups were created in:
 | `GG_Finance_FileShare_RW` | Global | Security | Read/write access to the Finance department file share |
 | `GG_Operations_FileShare_RW` | Global | Security | Read/write access to the Operations department file share |
 | `GG_All_Employees` | Global | Security | General group for all standard employee accounts |
+| `GG_Standard_Users` | Global | Security | Standard non-IT users targeted by restrictive user policies |
 
 ## User Accounts Created
 
@@ -28,18 +29,20 @@ Each department has two test users. Users were created in their department-speci
 |---|---|---|---|---|
 | Alex Morgan | `alex.morgan` | IT | `RK-LAB/Users/IT` | `GG_All_Employees`, `GG_IT_Admins` |
 | Jamie Brooks | `jamie.brooks` | IT | `RK-LAB/Users/IT` | `GG_All_Employees`, `GG_IT_Admins` |
-| Sarah Collins | `sarah.collins` | HR | `RK-LAB/Users/HR` | `GG_All_Employees`, `GG_HR_FileShare_RW` |
-| Mark Rivera | `mark.rivera` | HR | `RK-LAB/Users/HR` | `GG_All_Employees`, `GG_HR_FileShare_RW` |
-| Emily Carter | `emily.carter` | Finance | `RK-LAB/Users/Finance` | `GG_All_Employees`, `GG_Finance_FileShare_RW` |
-| Daniel Price | `daniel.price` | Finance | `RK-LAB/Users/Finance` | `GG_All_Employees`, `GG_Finance_FileShare_RW` |
-| Olivia Bennett | `olivia.bennett` | Operations | `RK-LAB/Users/Operations` | `GG_All_Employees`, `GG_Operations_FileShare_RW` |
-| Chris Walker | `chris.walker` | Operations | `RK-LAB/Users/Operations` | `GG_All_Employees`, `GG_Operations_FileShare_RW` |
+| Sarah Collins | `sarah.collins` | HR | `RK-LAB/Users/HR` | `GG_All_Employees`, `GG_Standard_Users`, `GG_HR_FileShare_RW` |
+| Mark Rivera | `mark.rivera` | HR | `RK-LAB/Users/HR` | `GG_All_Employees`, `GG_Standard_Users`, `GG_HR_FileShare_RW` |
+| Emily Carter | `emily.carter` | Finance | `RK-LAB/Users/Finance` | `GG_All_Employees`, `GG_Standard_Users`, `GG_Finance_FileShare_RW` |
+| Daniel Price | `daniel.price` | Finance | `RK-LAB/Users/Finance` | `GG_All_Employees`, `GG_Standard_Users`, `GG_Finance_FileShare_RW` |
+| Olivia Bennett | `olivia.bennett` | Operations | `RK-LAB/Users/Operations` | `GG_All_Employees`, `GG_Standard_Users`, `GG_Operations_FileShare_RW` |
+| Chris Walker | `chris.walker` | Operations | `RK-LAB/Users/Operations` | `GG_All_Employees`, `GG_Standard_Users`, `GG_Operations_FileShare_RW` |
 
 ## Account Configuration Notes
 
 All user accounts were created with temporary passwords.
 
 The accounts are intended to simulate normal employee accounts in a small business environment. Department membership is represented by OU placement, while access rights are assigned through security group membership.
+
+`GG_Standard_Users` is used later for Group Policy security filtering. IT users are intentionally excluded so workstation restrictions can apply to standard users without blocking IT administration accounts.
 
 ## Group-Based Access Control
 
@@ -61,6 +64,7 @@ OUs and security groups serve different purposes:
 Example:
 
 A user named Sarah Collins belongs in the `RK-LAB/Users/HR` OU because she is an HR employee. She receives access to HR resources because she is a member of `GG_HR_FileShare_RW`.
+
 ## Notes for Later Phases
 
 These groups will be used in Phase 4 when department file shares and NTFS permissions are configured.

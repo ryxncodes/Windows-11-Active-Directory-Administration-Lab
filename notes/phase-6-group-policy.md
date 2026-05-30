@@ -48,6 +48,8 @@ Settings configured:
 
 The login banner appeared before sign-in on the Windows 11 domain-joined workstations.
 
+Screenshot: [`phase-6-login-banner.png`](../screenshots/phase-6-login-banner.png)
+
 Result: Pass
 
 ## GPO 2 - Local Administrators
@@ -138,6 +140,8 @@ The following applied computer GPOs were shown:
 - `GPO-Workstations-Local-Admins`
 - `GPO-Workstations-Windows-Update`
 - `Default Domain Policy`
+
+Screenshot: [`phase-6-gp-result-computer.png`](../screenshots/phase-6-gp-result-computer.png)
 
 Result: Pass
 
@@ -233,6 +237,11 @@ Drive mapping results:
 Department users received only their department drive and the Public drive.
 
 IT users were not automatically mapped to every department drive, even though they had access through `GG_IT_Admins`.
+
+Screenshots:
+
+- [`phase-6-drive-maps.png`](../screenshots/phase-6-drive-maps.png)
+- [`phase-6-hr-drive-maps.png`](../screenshots/phase-6-hr-drive-maps.png)
 
 Result: Pass
 

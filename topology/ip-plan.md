@@ -16,7 +16,7 @@
 
 | Hostname | Role | IP Address | DNS Server | Notes |
 |---|---|---:|---:|---|
-| `DC01` | Domain Controller, DNS, DHCP/file shares | `10.10.10.10` | `10.10.10.10` | Hosts AD DS, DNS, SMB shares, and GPOs |
+| `DC01` | Domain Controller, DNS, file shares | `10.10.10.10` | `10.10.10.10` | Hosts AD DS, DNS, SMB shares, and GPOs |
 | `WIN11-01` | Windows 11 workstation | `10.10.10.21` | `10.10.10.10` | Domain-joined client |
 | `WIN11-02` | Windows 11 workstation | `10.10.10.22` | `10.10.10.10` | Domain-joined client |
 

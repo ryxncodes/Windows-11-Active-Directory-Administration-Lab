@@ -39,4 +39,4 @@ Example: an HR user belongs in the `Users/HR` OU, but receives access to the HR 
 
 ## Screenshot
 
-See: `screenshots/ad-ou-structure.png`
+See: [`screenshots/phase-2-ad-ou-structure.png`](../screenshots/phase-2-ad-ou-structure.png)
