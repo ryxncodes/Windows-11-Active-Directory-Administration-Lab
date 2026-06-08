@@ -1,10 +1,22 @@
 # Windows 11 Active Directory Administration Lab
 
-Status: In Progress
+Status: Built and validated
 
-This project documents a small Windows domain lab built to practice junior systems administration work: Active Directory administration, DNS, OU design, user and group management, file shares, NTFS permissions, Group Policy, domain-joined Windows clients, troubleshooting, and PowerShell automation.
+This project documents a hands-on Windows Active Directory lab built for junior systems administration practice. The environment includes a Windows Server domain controller, two Windows 11 domain clients, DNS, SMB file shares, NTFS permissions, Group Policy, domain user administration, and PowerShell automation.
 
-The goal is to show practical, hands-on administration work in a clear format that a recruiter can scan and an IT manager can review for technical depth.
+The goal of the project is to demonstrate practical administration skills in a format that can be reviewed quickly by recruiters while still providing enough technical depth for an IT manager or systems administrator.
+
+## Highlights
+
+- Built an isolated VirtualBox domain lab for `rk-lab.local`.
+- Configured `DC01` with Active Directory Domain Services, DNS, SMB shares, and Group Policy.
+- Joined `WIN11-01` and `WIN11-02` to the domain.
+- Created a structured OU design for users, workstations, servers, groups, service accounts, and disabled users.
+- Created department users and security groups for IT, HR, Finance, and Operations.
+- Configured department file shares with group-based NTFS permissions.
+- Configured GPOs for login banners, mapped drives, local administrator membership, Windows Update behavior, standard user restrictions, and account lockout policy.
+- Wrote PowerShell scripts for lab health checks, user creation, stale account reporting, account disablement, group membership reporting, GPO backup, and stale local profile cleanup.
+- Validated the lab with `Test-ADLabHealth.ps1`: `PASS=31 WARN=0 FAIL=0`.
 
 ## Environment
 
@@ -30,38 +42,46 @@ The lab uses the isolated `10.10.10.0/24` subnet. Clients use `DC01` for DNS so 
 
 Full network notes are documented in [topology/ip-plan.md](topology/ip-plan.md).
 
-## Implemented Features
-
-- Built an isolated Windows domain environment for `rk-lab.local`.
-- Configured `DC01` with AD DS, DNS, and SMB file shares.
-- Created a structured OU layout for users, computers, groups, service accounts, and disabled accounts.
-- Created department-based users and security groups for IT, HR, Finance, and Operations.
-- Configured department file shares with group-based NTFS permissions.
-- Joined Windows 11 clients to the domain and moved computer objects into the workstation OU.
-- Validated user logons, DNS behavior, domain join status, and file share access.
-- Configured Group Policy for login banners, mapped drives, local administrators, Windows Update behavior, standard user restrictions, and account lockout policy.
-- Troubleshot real lab issues, including domain controller rename problems, VirtualBox network attachment, missing shares, and GPO filtering/read permission problems.
-- Added a PowerShell helper script for creating lab users with department-based OU placement and group membership.
-
-## Repository Structure
+## Repository Guide
 
 | Path | Purpose |
 |---|---|
 | [topology/ip-plan.md](topology/ip-plan.md) | Network, host, domain, and DNS plan |
 | [notes/](notes/) | Phase-by-phase implementation and troubleshooting notes |
 | [screenshots/](screenshots/) | Visual evidence from ADUC, permissions, mapped drives, and GPO validation |
-| [scripts/New-LabUser.ps1](scripts/New-LabUser.ps1) | PowerShell helper for creating department users individually or from CSV |
-| [scripts/Test-ADLabHealth.ps1](scripts/Test-ADLabHealth.ps1) | Non-destructive health checks for AD, DNS, SMB shares, OUs, groups, and GPO visibility |
-| [scripts/Get-StaleADUsers.ps1](scripts/Get-StaleADUsers.ps1) | Read-only report of stale enabled AD users |
-| [scripts/Disable-StaleADUsers.ps1](scripts/Disable-StaleADUsers.ps1) | Disables stale AD users with `-WhatIf` support |
-| [scripts/Get-LabGroupMembershipReport.ps1](scripts/Get-LabGroupMembershipReport.ps1) | Exports membership for expected lab security groups |
-| [scripts/Backup-LabGPOs.ps1](scripts/Backup-LabGPOs.ps1) | Creates timestamped backups of expected lab GPOs |
-| [scripts/Remove-StaleLocalProfiles.ps1](scripts/Remove-StaleLocalProfiles.ps1) | Removes stale local Windows profiles with `-WhatIf` support |
-| [docs/evidence-index.md](docs/evidence-index.md) | Index of screenshots and validation evidence |
-| [docs/script-safety.md](docs/script-safety.md) | Safety notes for scripts that create, disable, or remove data |
+| [scripts/](scripts/) | PowerShell administration and validation scripts |
+| [scripts/outputs/](scripts/outputs/) | Script output screenshots, CSV reports, and GPO backup evidence |
+| [docs/evidence-index.md](docs/evidence-index.md) | Index of screenshots and script output evidence |
+| [docs/script-safety.md](docs/script-safety.md) | Safety notes for scripts that create, disable, move, remove, or export data |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Troubleshooting runbook for common AD, DNS, GPO, drive map, and permission issues |
 
-## Validation Steps
+## Automation Evidence
+
+The PowerShell scripts are the strongest technical part of this project. They show repeatable administration tasks, safe execution patterns, validation checks, and exportable evidence.
+
+| Script | Purpose | Evidence |
+|---|---|---|
+| [Test-ADLabHealth.ps1](scripts/Test-ADLabHealth.ps1) | Checks DC reachability, DNS, SMB shares, OUs, groups, and GPO visibility | [Health check output](scripts/outputs/Test-ADLabHealth-Output.png) |
+| [New-LabUser.ps1](scripts/New-LabUser.ps1) | Creates single or CSV-based department users with OU placement and group membership | [WhatIf output](scripts/outputs/New-LabUser-Output.png) |
+| [Get-LabGroupMembershipReport.ps1](scripts/Get-LabGroupMembershipReport.ps1) | Exports membership for expected lab security groups | [CSV output](scripts/outputs/group-membership-report.csv) |
+| [Get-StaleADUsers.ps1](scripts/Get-StaleADUsers.ps1) | Reports inactive or never-logged-on enabled AD users | [CSV output](scripts/outputs/stale-users.csv) |
+| [Disable-StaleADUsers.ps1](scripts/Disable-StaleADUsers.ps1) | Disables stale users and can move them to the Disabled Users OU | Supports `-WhatIf` and `-Verbose` |
+| [Backup-LabGPOs.ps1](scripts/Backup-LabGPOs.ps1) | Creates timestamped backups of expected lab GPOs using Microsoft `Backup-GPO` | [GPO backup output](scripts/outputs/gpo-backups/) |
+| [Remove-StaleLocalProfiles.ps1](scripts/Remove-StaleLocalProfiles.ps1) | Removes stale local Windows profiles from endpoints | Supports `-WhatIf`; skips special and loaded profiles |
+
+Example evidence commands:
+
+```powershell
+.\Test-ADLabHealth.ps1 -Verbose
+.\New-LabUser.ps1 -FirstName Morgan -LastName Read -Department HR -TemporaryPassword "ChangeMe123!" -WhatIf -Verbose
+.\Get-LabGroupMembershipReport.ps1 -ExportCsvPath .\outputs\group-membership-report.csv
+.\Get-StaleADUsers.ps1 -DaysInactive 180 -IncludeNeverLoggedOn -NeverLoggedOnGraceDays 14 -ExportCsvPath .\outputs\stale-users.csv
+.\Backup-LabGPOs.ps1 -BackupRoot .\outputs\gpo-backups -Verbose
+.\Disable-StaleADUsers.ps1 -DaysInactive 180 -IncludeNeverLoggedOn -NeverLoggedOnGraceDays 14 -WhatIf -Verbose
+.\Remove-StaleLocalProfiles.ps1 -DaysInactive 180 -DomainNetbiosName RK-LAB -WhatIf -Verbose
+```
+
+## Validation Summary
 
 Key validation performed in the lab:
 
@@ -69,23 +89,13 @@ Key validation performed in the lab:
 - Verified the `rk-lab.local` DNS forward lookup zone.
 - Confirmed Windows 11 clients could reach `DC01` by IP and hostname.
 - Joined `WIN11-01` and `WIN11-02` to the domain.
-- Verified domain users could sign in to Windows 11 clients.
-- Tested department share access with HR, Finance, Operations, and IT users.
+- Verified domain users could sign in to Windows 11 clients and resolve `DC01` through lab DNS.
+- Tested department share access for HR, Finance, Operations, and IT users.
 - Confirmed denied access for users outside the expected security groups.
 - Ran elevated `gpresult /scope computer /r` to confirm computer-side GPO application.
 - Verified mapped drives using department user logons.
 - Tested account lockout behavior after repeated failed sign-in attempts.
-
-Detailed validation notes are documented by phase:
-
-| Phase | Focus |
-|---|---|
-| [Phase 1](notes/phase-1-foundation-checks.md) | Foundation checks, DC setup, DNS, client connectivity |
-| [Phase 2](notes/phase-2-ou-design.md) | OU design |
-| [Phase 3](notes/phase-3-users-and-groups.md) | Users and security groups |
-| [Phase 4](notes/phase-4-file-shares-and-ntfs-permissions.md) | SMB shares and NTFS permissions |
-| [Phase 5](notes/phase-5-domain-join-and-access-testing.md) | Domain join and access testing |
-| [Phase 6](notes/phase-6-group-policy.md) | Group Policy configuration and troubleshooting |
+- Generated group membership, stale account, new-user `-WhatIf`, and GPO backup evidence.
 
 ## Screenshots
 
@@ -95,61 +105,19 @@ Detailed validation notes are documented by phase:
 | [phase-3-groups.png](screenshots/phase-3-groups.png) | Security groups created for access control |
 | [phase-4-operations-folder-permissions.png](screenshots/phase-4-operations-folder-permissions.png) | Department NTFS permission configuration |
 | [phase-4-public-folder-permissions.png](screenshots/phase-4-public-folder-permissions.png) | Public share NTFS permission configuration |
+| [phase-5-domain-join.png](screenshots/phase-5-domain-join.png) | Domain user session on `WIN11-01` with DNS resolution through `DC01` |
 | [phase-6-login-banner.png](screenshots/phase-6-login-banner.png) | Login banner GPO result |
 | [phase-6-gp-result-computer.png](screenshots/phase-6-gp-result-computer.png) | Computer-side GPO validation |
-| [phase-6-drive-maps.png](screenshots/phase-6-drive-maps.png) | Drive map GPO configuration |
+| [phase-6-drive-maps.png](screenshots/phase-6-drive-maps.png) | Drive map Group Policy Preferences configuration |
 | [phase-6-hr-drive-maps.png](screenshots/phase-6-hr-drive-maps.png) | HR user mapped drive result |
 
-## Evidence Status
+## Phase Notes
 
-| Area | Status |
+| Phase | Focus |
 |---|---|
-| OU structure | Screenshot included |
-| Security groups | Screenshot included |
-| NTFS permissions | Screenshots included |
-| Group Policy configuration/results | Screenshots included for login banner, computer `gpresult`, and drive maps |
-| Domain join and access testing | Documented in notes; Phase 5 screenshots still needed |
-| Automation scripts | Syntax-checked with PowerShell; domain-dependent scripts still need lab execution evidence |
-
-## Automation
-
-PowerShell scripts in this repository have been syntax-checked. Scripts that require a domain controller, RSAT modules, or Windows profile data should still be tested inside the Windows lab before being treated as operational tools.
-
-The repository includes [scripts/New-LabUser.ps1](scripts/New-LabUser.ps1), a PowerShell script that:
-
-- Accepts first name, last name, department, and temporary password.
-- Supports CSV input with required-field validation.
-- Generates an available `SamAccountName`.
-- Places the account in the correct department OU.
-- Sets `ChangePasswordAtLogon`.
-- Adds the account to standard and department-specific groups.
-- Supports `-WhatIf` for safer testing.
-
-Example:
-
-```powershell
-.\New-LabUser.ps1 -FirstName Morgan -LastName Read -Department HR -TemporaryPassword "ChangeMe123!" -WhatIf
-```
-
-Health check example:
-
-```powershell
-.\Test-ADLabHealth.ps1 -Verbose
-```
-
-Stale profile cleanup example:
-
-```powershell
-.\Remove-StaleLocalProfiles.ps1 -DaysInactive 180 -DomainNetbiosName RK-LAB -WhatIf
-```
-
-Review [docs/script-safety.md](docs/script-safety.md) before running scripts that create, disable, move, or remove data.
-
-## Future Improvements
-
-- Add Phase 5 screenshots for domain join verification, `whoami`, DNS lookup, and allowed/denied share access.
-- Add and document DHCP scope details if DHCP becomes part of the lab design.
-- Export and include sanitized GPO reports for each custom GPO.
-- Add a workstation build checklist for repeatable VM setup.
-- Add PowerShell scripts for creating OUs, groups, shares, and baseline GPOs.
-- Add a cleanup/reset guide for rebuilding the lab from a clean baseline.
+| [Phase 1](notes/phase-1-foundation-checks.md) | Foundation checks, DC setup, DNS, client connectivity |
+| [Phase 2](notes/phase-2-ou-design.md) | OU design |
+| [Phase 3](notes/phase-3-users-and-groups.md) | Users and security groups |
+| [Phase 4](notes/phase-4-file-shares-and-ntfs-permissions.md) | SMB shares and NTFS permissions |
+| [Phase 5](notes/phase-5-domain-join-and-access-testing.md) | Domain join and access testing |
+| [Phase 6](notes/phase-6-group-policy.md) | Group Policy configuration and troubleshooting |

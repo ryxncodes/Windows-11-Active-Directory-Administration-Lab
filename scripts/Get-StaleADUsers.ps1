@@ -4,7 +4,8 @@ Reports stale Active Directory users in the rk-lab.local lab.
 
 .DESCRIPTION
 Finds enabled AD users whose LastLogonDate is older than the selected threshold.
-Never-logged-on accounts can be included when requested. This script is read-only
+Never-logged-on accounts can be included when requested, but newly created
+accounts are protected by a configurable grace period. This script is read-only
 and is intended to help identify accounts that may need review, disablement, or
 cleanup.
 
@@ -18,7 +19,12 @@ Optional distinguished name to limit the search scope.
 Optional path to export the report as CSV.
 
 .PARAMETER IncludeNeverLoggedOn
-Also include enabled users that have no LastLogonDate.
+Also include enabled users that have no LastLogonDate and were created before
+the never-logged-on grace period.
+
+.PARAMETER NeverLoggedOnGraceDays
+Number of days to ignore never-logged-on accounts after creation. This prevents
+newly staged accounts from being flagged immediately.
 
 .EXAMPLE
 .\Get-StaleADUsers.ps1
@@ -28,6 +34,9 @@ Also include enabled users that have no LastLogonDate.
 
 .EXAMPLE
 .\Get-StaleADUsers.ps1 -DaysInactive 180 -IncludeNeverLoggedOn
+
+.EXAMPLE
+.\Get-StaleADUsers.ps1 -DaysInactive 180 -IncludeNeverLoggedOn -NeverLoggedOnGraceDays 30
 #>
 
 [CmdletBinding()]
@@ -45,7 +54,11 @@ param (
     [string]$ExportCsvPath,
 
     [Parameter()]
-    [switch]$IncludeNeverLoggedOn
+    [switch]$IncludeNeverLoggedOn,
+
+    [Parameter()]
+    [ValidateRange(0, 3650)]
+    [int]$NeverLoggedOnGraceDays = 14
 )
 
 $ErrorActionPreference = "Stop"
@@ -53,9 +66,11 @@ $ErrorActionPreference = "Stop"
 Import-Module ActiveDirectory -ErrorAction Stop
 
 $CutoffDate = (Get-Date).AddDays(-$DaysInactive)
+$NeverLoggedOnCutoffDate = (Get-Date).AddDays(-$NeverLoggedOnGraceDays)
 
 Write-Verbose "Searching enabled users under $SearchBase."
 Write-Verbose "Stale cutoff date: $CutoffDate"
+Write-Verbose "Never-logged-on grace cutoff date: $NeverLoggedOnCutoffDate"
 
 $Users = Get-ADUser `
     -SearchBase $SearchBase `
@@ -63,10 +78,18 @@ $Users = Get-ADUser `
     -Properties Department, LastLogonDate, PasswordLastSet, whenCreated |
     Where-Object {
         ($_.LastLogonDate -and $_.LastLogonDate -lt $CutoffDate) -or
-        ($IncludeNeverLoggedOn -and -not $_.LastLogonDate)
+        ($IncludeNeverLoggedOn -and -not $_.LastLogonDate -and $_.whenCreated -lt $NeverLoggedOnCutoffDate)
     } |
     Sort-Object LastLogonDate, SamAccountName |
     Select-Object `
+        @{Name = "ReviewReason"; Expression = {
+            if ($_.LastLogonDate -and $_.LastLogonDate -lt $CutoffDate) {
+                "Inactive for more than $DaysInactive days"
+            }
+            elseif (-not $_.LastLogonDate) {
+                "Never logged on; created more than $NeverLoggedOnGraceDays days ago"
+            }
+        }},
         Name,
         SamAccountName,
         Enabled,

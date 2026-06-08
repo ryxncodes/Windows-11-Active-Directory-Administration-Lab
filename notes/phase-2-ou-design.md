@@ -25,9 +25,9 @@ The top-level `RK-LAB` OU separates custom lab objects from default Active Direc
 
 Computer objects are separated into Workstations and Servers so different Group Policies can be applied based on device role.
 
-User accounts are organized by department to make administration easier and to allow department-specific policies later.
+User accounts are organized by department to make administration easier and to support department-specific policies.
 
-Security groups are stored in a dedicated Groups OU. Groups will be used for access control, while OUs will be used for organization and Group Policy targeting.
+Security groups are stored in a dedicated Groups OU. Groups are used for access control, while OUs are used for organization and Group Policy targeting.
 
 ## OU vs Security Group
 

@@ -32,16 +32,17 @@ Domain users were able to log into the workstations successfully.
 
 File share testing confirmed that users had access only to the folders allowed by their group memberships.
 
-## Evidence Gap
+## Evidence
 
-The access test results are documented in the matrix above, but Phase 5 does not yet include screenshots or saved command output.
+The access test results are documented in the matrix above. Screenshot evidence is included for a domain user session on `WIN11-01`, showing:
 
-Evidence to add later:
+- `whoami` output for `rk-lab\alex.morgan`
+- `hostname` output for `WIN11-01`
+- `nslookup DC01` resolving through `dc01.rk-lab.local` at `10.10.10.10`
 
-- Windows domain membership screen for `WIN11-01` or `WIN11-02`
-- `whoami` output from a domain user session
-- DNS lookup or ping test showing client resolution through `DC01`
-- Allowed and denied department share access screenshots
+Evidence file:
+
+- [`phase-5-domain-join.png`](../screenshots/phase-5-domain-join.png)
 
 ## Default Domain Controller Shares
 

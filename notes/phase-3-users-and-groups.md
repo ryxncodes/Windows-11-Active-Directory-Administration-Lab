@@ -42,13 +42,13 @@ All user accounts were created with temporary passwords.
 
 The accounts are intended to simulate normal employee accounts in a small business environment. Department membership is represented by OU placement, while access rights are assigned through security group membership.
 
-`GG_Standard_Users` is used later for Group Policy security filtering. IT users are intentionally excluded so workstation restrictions can apply to standard users without blocking IT administration accounts.
+`GG_Standard_Users` is used for Group Policy security filtering. IT users are intentionally excluded so workstation restrictions can apply to standard users without blocking IT administration accounts.
 
 ## Group-Based Access Control
 
 This lab uses security groups for permissions instead of assigning permissions directly to individual users.
 
-For example, HR users are members of `GG_HR_FileShare_RW`. When the HR file share is created later, permissions will be assigned to `GG_HR_FileShare_RW` rather than directly to `sarah.collins` or `mark.rivera`.
+For example, HR users are members of `GG_HR_FileShare_RW`. HR share permissions are assigned to `GG_HR_FileShare_RW` rather than directly to `sarah.collins` or `mark.rivera`.
 
 This approach is easier to manage because access can be changed by adding or removing users from groups instead of modifying permissions on each resource.
 
@@ -65,9 +65,9 @@ Example:
 
 A user named Sarah Collins belongs in the `RK-LAB/Users/HR` OU because she is an HR employee. She receives access to HR resources because she is a member of `GG_HR_FileShare_RW`.
 
-## Notes for Later Phases
+## Access Model
 
-These groups will be used in Phase 4 when department file shares and NTFS permissions are configured.
+These groups are used for department file shares, NTFS permissions, and Group Policy targeting.
 
 Expected access model:
 

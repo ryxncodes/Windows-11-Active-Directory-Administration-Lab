@@ -8,7 +8,8 @@ disables them, and can move them to the lab Disabled Users OU.
 
 This script supports -WhatIf and should be reviewed with -WhatIf before making
 changes. Never-logged-on accounts are skipped unless -IncludeNeverLoggedOn is
-used.
+used, and newly created never-logged-on accounts are protected by a configurable
+grace period.
 
 .PARAMETER DaysInactive
 Number of inactive days before a user is considered stale.
@@ -26,6 +27,10 @@ Move disabled accounts to the Disabled Users OU after disabling them.
 Also include enabled users that have no LastLogonDate. This is disabled by
 default so newly staged accounts are not disabled by accident.
 
+.PARAMETER NeverLoggedOnGraceDays
+Number of days to ignore never-logged-on accounts after creation. This prevents
+newly staged accounts from being disabled immediately.
+
 .EXAMPLE
 .\Disable-StaleADUsers.ps1 -DaysInactive 180 -WhatIf
 
@@ -34,6 +39,9 @@ default so newly staged accounts are not disabled by accident.
 
 .EXAMPLE
 .\Disable-StaleADUsers.ps1 -DaysInactive 180 -IncludeNeverLoggedOn -WhatIf
+
+.EXAMPLE
+.\Disable-StaleADUsers.ps1 -DaysInactive 180 -IncludeNeverLoggedOn -NeverLoggedOnGraceDays 30 -WhatIf
 #>
 
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = "High")]
@@ -54,7 +62,11 @@ param (
     [switch]$MoveToDisabledOU,
 
     [Parameter()]
-    [switch]$IncludeNeverLoggedOn
+    [switch]$IncludeNeverLoggedOn,
+
+    [Parameter()]
+    [ValidateRange(0, 3650)]
+    [int]$NeverLoggedOnGraceDays = 14
 )
 
 $ErrorActionPreference = "Stop"
@@ -62,9 +74,11 @@ $ErrorActionPreference = "Stop"
 Import-Module ActiveDirectory -ErrorAction Stop
 
 $CutoffDate = (Get-Date).AddDays(-$DaysInactive)
+$NeverLoggedOnCutoffDate = (Get-Date).AddDays(-$NeverLoggedOnGraceDays)
 
 Write-Verbose "Searching enabled users under $SearchBase."
 Write-Verbose "Stale cutoff date: $CutoffDate"
+Write-Verbose "Never-logged-on grace cutoff date: $NeverLoggedOnCutoffDate"
 
 if ($MoveToDisabledOU) {
     $null = Get-ADOrganizationalUnit -Identity $DisabledUsersOU -ErrorAction Stop
@@ -73,10 +87,10 @@ if ($MoveToDisabledOU) {
 $Users = Get-ADUser `
     -SearchBase $SearchBase `
     -Filter 'Enabled -eq $true' `
-    -Properties Department, LastLogonDate |
+    -Properties Department, LastLogonDate, whenCreated |
     Where-Object {
         ($_.LastLogonDate -and $_.LastLogonDate -lt $CutoffDate) -or
-        ($IncludeNeverLoggedOn -and -not $_.LastLogonDate)
+        ($IncludeNeverLoggedOn -and -not $_.LastLogonDate -and $_.whenCreated -lt $NeverLoggedOnCutoffDate)
     } |
     Sort-Object LastLogonDate, SamAccountName
 
@@ -86,6 +100,12 @@ if (-not $Users) {
 
 foreach ($User in $Users) {
     $Action = "Disable stale user"
+    $ReviewReason = if ($User.LastLogonDate -and $User.LastLogonDate -lt $CutoffDate) {
+        "Inactive for more than $DaysInactive days"
+    }
+    elseif (-not $User.LastLogonDate) {
+        "Never logged on; created more than $NeverLoggedOnGraceDays days ago"
+    }
 
     if ($MoveToDisabledOU) {
         $Action = "$Action and move to Disabled Users OU"
@@ -105,6 +125,7 @@ foreach ($User in $Users) {
     }
 
     [PSCustomObject]@{
+        ReviewReason      = $ReviewReason
         Name              = $User.Name
         SamAccountName    = $User.SamAccountName
         Department        = $User.Department

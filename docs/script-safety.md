@@ -7,9 +7,20 @@ production without review.
 ## Validation Status
 
 All PowerShell scripts in this repository have been syntax-checked with
-PowerShell. Scripts that require a domain controller, RSAT modules, or Windows
-profile data still need to be tested inside the Windows lab environment before
-being treated as operational tools.
+PowerShell. Domain-dependent validation has also been performed inside the lab
+environment:
+
+- `Test-ADLabHealth.ps1 -Verbose` completed with `PASS=31 WARN=0 FAIL=0`.
+- `New-LabUser.ps1` was tested with `-WhatIf` to confirm target OU and group
+  membership behavior before changes.
+- `Get-LabGroupMembershipReport.ps1` exported group membership evidence.
+- `Get-StaleADUsers.ps1` exported inactive/never-logged-on user review data
+  with review reasons.
+- `Backup-LabGPOs.ps1` generated timestamped backups of expected lab GPOs.
+
+Scripts that remove local Windows profiles still depend on endpoint profile
+state and should be tested on the intended workstation with `-WhatIf` before
+removing anything.
 
 ## Destructive Scripts
 
@@ -24,6 +35,7 @@ The following scripts can change or remove data:
 Recommended first run:
 
 ```powershell
+.\New-LabUser.ps1 -FirstName Morgan -LastName Read -Department HR -TemporaryPassword "ChangeMe123!" -WhatIf -Verbose
 .\Disable-StaleADUsers.ps1 -DaysInactive 180 -WhatIf
 .\Remove-StaleLocalProfiles.ps1 -DaysInactive 180 -DomainNetbiosName RK-LAB -WhatIf
 ```
@@ -37,6 +49,22 @@ The following scripts are intended to be non-destructive:
 - [`Test-ADLabHealth.ps1`](../scripts/Test-ADLabHealth.ps1)
 
 `Backup-LabGPOs.ps1` writes backup files but does not modify the GPOs.
+
+Recommended evidence runs:
+
+```powershell
+.\Test-ADLabHealth.ps1 -Verbose
+.\Get-LabGroupMembershipReport.ps1 -ExportCsvPath .\outputs\group-membership-report.csv
+.\Get-StaleADUsers.ps1 -DaysInactive 180 -IncludeNeverLoggedOn -NeverLoggedOnGraceDays 14 -ExportCsvPath .\outputs\stale-users.csv
+.\Backup-LabGPOs.ps1 -BackupRoot .\outputs\gpo-backups -Verbose
+```
+
+`Backup-LabGPOs.ps1` uses Microsoft `Backup-GPO` and accepts `-BackupRoot` to
+control where timestamped backups are written.
+
+`Get-StaleADUsers.ps1` and `Disable-StaleADUsers.ps1` support
+`-NeverLoggedOnGraceDays` when `-IncludeNeverLoggedOn` is used, so newly created
+accounts are not immediately flagged simply because they have not logged in yet.
 
 ## Production Notes
 

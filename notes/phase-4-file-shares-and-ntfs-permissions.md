@@ -42,7 +42,7 @@ The `Public` share is available to all employees through the `GG_All_Employees` 
 - `\\DC01` shows the `Departments` and `Public` shares.
 - Department folders have restricted NTFS permissions.
 - Public folder allows all employees to modify files.
-- Full user access testing will be completed after domain-joining Windows 11 clients.
+- Full user access testing was completed after domain-joining the Windows 11 clients.
 
 Screenshots:
 
