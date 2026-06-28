@@ -1,87 +1,56 @@
 <#
-.SYNOPSIS
-Disables stale Active Directory users and optionally moves them to Disabled Users.
+Disables stale enabled AD users in the lab.
 
-.DESCRIPTION
-Finds enabled AD users whose LastLogonDate is older than the selected threshold,
-disables them, and can move them to the lab Disabled Users OU.
+Run with -WhatIf first. I kept never-logged-on users out by default because
+new staged accounts can look stale if they have not been used yet.
 
-This script supports -WhatIf and should be reviewed with -WhatIf before making
-changes. Never-logged-on accounts are skipped unless -IncludeNeverLoggedOn is
-used, and newly created never-logged-on accounts are protected by a configurable
-grace period.
-
-.PARAMETER DaysInactive
-Number of inactive days before a user is considered stale.
-
-.PARAMETER SearchBase
-Optional distinguished name to limit the search scope.
-
-.PARAMETER DisabledUsersOU
-Target OU for disabled users when -MoveToDisabledOU is used.
-
-.PARAMETER MoveToDisabledOU
-Move disabled accounts to the Disabled Users OU after disabling them.
-
-.PARAMETER IncludeNeverLoggedOn
-Also include enabled users that have no LastLogonDate. This is disabled by
-default so newly staged accounts are not disabled by accident.
-
-.PARAMETER NeverLoggedOnGraceDays
-Number of days to ignore never-logged-on accounts after creation. This prevents
-newly staged accounts from being disabled immediately.
-
-.EXAMPLE
-.\Disable-StaleADUsers.ps1 -DaysInactive 180 -WhatIf
-
-.EXAMPLE
-.\Disable-StaleADUsers.ps1 -DaysInactive 180 -MoveToDisabledOU -Verbose
-
-.EXAMPLE
-.\Disable-StaleADUsers.ps1 -DaysInactive 180 -IncludeNeverLoggedOn -WhatIf
-
-.EXAMPLE
-.\Disable-StaleADUsers.ps1 -DaysInactive 180 -IncludeNeverLoggedOn -NeverLoggedOnGraceDays 30 -WhatIf
+Examples:
+  .\Disable-StaleADUsers.ps1 -DaysInactive 180 -WhatIf
+  .\Disable-StaleADUsers.ps1 -DaysInactive 180 -MoveToDisabledOU -WhatIf
+  .\Disable-StaleADUsers.ps1 -IncludeNeverLoggedOn -WhatIf
 #>
 
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = "High")]
 param (
-    [Parameter()]
-    [ValidateRange(1, 3650)]
     [int]$DaysInactive = 180,
-
-    [Parameter()]
-    [ValidateNotNullOrEmpty()]
     [string]$SearchBase = "OU=Users,OU=_RK-LAB,DC=rk-lab,DC=local",
-
-    [Parameter()]
-    [ValidateNotNullOrEmpty()]
     [string]$DisabledUsersOU = "OU=Disabled Users,OU=Users,OU=_RK-LAB,DC=rk-lab,DC=local",
-
-    [Parameter()]
     [switch]$MoveToDisabledOU,
-
-    [Parameter()]
     [switch]$IncludeNeverLoggedOn,
-
-    [Parameter()]
-    [ValidateRange(0, 3650)]
     [int]$NeverLoggedOnGraceDays = 14
 )
 
 $ErrorActionPreference = "Stop"
 
-Import-Module ActiveDirectory -ErrorAction Stop
+if ($DaysInactive -lt 1) {
+    throw "DaysInactive needs to be at least 1."
+}
 
-$CutoffDate = (Get-Date).AddDays(-$DaysInactive)
-$NeverLoggedOnCutoffDate = (Get-Date).AddDays(-$NeverLoggedOnGraceDays)
+if ($NeverLoggedOnGraceDays -lt 0) {
+    throw "NeverLoggedOnGraceDays cannot be negative."
+}
 
-Write-Verbose "Searching enabled users under $SearchBase."
-Write-Verbose "Stale cutoff date: $CutoffDate"
-Write-Verbose "Never-logged-on grace cutoff date: $NeverLoggedOnCutoffDate"
+Import-Module ActiveDirectory
+
+$StaleBefore = (Get-Date).AddDays(-$DaysInactive)
+$NeverLoggedOnBefore = (Get-Date).AddDays(-$NeverLoggedOnGraceDays)
+
+Write-Host "Looking for stale enabled users under:"
+Write-Host $SearchBase
+Write-Host ""
+Write-Host "Inactive before: $StaleBefore"
+
+if ($IncludeNeverLoggedOn) {
+    Write-Host "Including never-logged-on users created before: $NeverLoggedOnBefore"
+}
+else {
+    Write-Host "Never-logged-on users are being skipped."
+}
 
 if ($MoveToDisabledOU) {
-    $null = Get-ADOrganizationalUnit -Identity $DisabledUsersOU -ErrorAction Stop
+    Get-ADOrganizationalUnit -Identity $DisabledUsersOU | Out-Null
+    Write-Host "Disabled users will be moved to:"
+    Write-Host $DisabledUsersOU
 }
 
 $Users = Get-ADUser `
@@ -89,27 +58,36 @@ $Users = Get-ADUser `
     -Filter 'Enabled -eq $true' `
     -Properties Department, LastLogonDate, whenCreated |
     Where-Object {
-        ($_.LastLogonDate -and $_.LastLogonDate -lt $CutoffDate) -or
-        ($IncludeNeverLoggedOn -and -not $_.LastLogonDate -and $_.whenCreated -lt $NeverLoggedOnCutoffDate)
+        $OldLogin = $_.LastLogonDate -and $_.LastLogonDate -lt $StaleBefore
+        $OldNeverUsed = $IncludeNeverLoggedOn -and -not $_.LastLogonDate -and $_.whenCreated -lt $NeverLoggedOnBefore
+
+        $OldLogin -or $OldNeverUsed
     } |
     Sort-Object LastLogonDate, SamAccountName
 
 if (-not $Users) {
-    Write-Verbose "No stale enabled users matched the current criteria."
+    Write-Host ""
+    Write-Host "No matching stale users found."
+    return
 }
 
 foreach ($User in $Users) {
-    $Action = "Disable stale user"
-    $ReviewReason = if ($User.LastLogonDate -and $User.LastLogonDate -lt $CutoffDate) {
-        "Inactive for more than $DaysInactive days"
+    if ($User.LastLogonDate) {
+        $Reason = "Inactive more than $DaysInactive days"
     }
-    elseif (-not $User.LastLogonDate) {
-        "Never logged on; created more than $NeverLoggedOnGraceDays days ago"
+    else {
+        $Reason = "Never logged on; older than $NeverLoggedOnGraceDays days"
     }
+
+    $Action = "Disable account"
 
     if ($MoveToDisabledOU) {
         $Action = "$Action and move to Disabled Users OU"
     }
+
+    Write-Host ""
+    Write-Host "User: $($User.SamAccountName)"
+    Write-Host "Reason: $Reason"
 
     if ($PSCmdlet.ShouldProcess($User.SamAccountName, $Action)) {
         Disable-ADAccount -Identity $User.DistinguishedName
@@ -121,11 +99,11 @@ foreach ($User in $Users) {
         $Status = "Disabled"
     }
     else {
-        $Status = "WhatIf: no changes made"
+        $Status = "WhatIf - no changes"
     }
 
     [PSCustomObject]@{
-        ReviewReason      = $ReviewReason
+        ReviewReason      = $Reason
         Name              = $User.Name
         SamAccountName    = $User.SamAccountName
         Department        = $User.Department

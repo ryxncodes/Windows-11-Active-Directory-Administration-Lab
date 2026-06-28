@@ -1,35 +1,15 @@
 <#
-.SYNOPSIS
-Backs up expected Group Policy Objects from the rk-lab.local lab.
+Backs up the lab GPOs into a timestamped folder.
 
-.DESCRIPTION
-Creates timestamped backups of the expected lab GPOs. This is useful before
-making GPO changes and as portfolio evidence that policies can be exported and
-reviewed.
-
-This script writes backup files only. It does not modify GPO settings.
-
-.PARAMETER BackupRoot
-Folder where GPO backups will be created.
-
-.PARAMETER GpoName
-Optional list of GPO names to back up. Defaults to the expected lab GPOs.
-
-.EXAMPLE
-.\Backup-LabGPOs.ps1
-
-.EXAMPLE
-.\Backup-LabGPOs.ps1 -BackupRoot C:\GPO-Backups -Verbose
+Examples:
+  .\Backup-LabGPOs.ps1
+  .\Backup-LabGPOs.ps1 -BackupRoot C:\GPO-Backups
 #>
 
 [CmdletBinding()]
 param (
-    [Parameter()]
-    [ValidateNotNullOrEmpty()]
     [string]$BackupRoot = ".\gpo-backups",
 
-    [Parameter()]
-    [ValidateNotNullOrEmpty()]
     [string[]]$GpoName = @(
         "GPO-Workstations-Login-Banner",
         "GPO-Workstations-Local-Admins",
@@ -42,20 +22,24 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-Import-Module GroupPolicy -ErrorAction Stop
+Import-Module GroupPolicy
 
-$ResolvedBackupRoot = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($BackupRoot)
-$Timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-$BackupPath = Join-Path -Path $ResolvedBackupRoot -ChildPath $Timestamp
+$BackupRoot = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($BackupRoot)
+$DateStamp = Get-Date -Format "yyyyMMdd-HHmmss"
+$BackupPath = Join-Path -Path $BackupRoot -ChildPath $DateStamp
 
 New-Item -Path $BackupPath -ItemType Directory -Force | Out-Null
 
-foreach ($Name in $GpoName) {
-    Write-Verbose "Backing up GPO: $Name"
+Write-Host "Backing up GPOs to:"
+Write-Host $BackupPath
+Write-Host ""
 
+foreach ($Name in $GpoName) {
     try {
-        $Gpo = Get-GPO -Name $Name -ErrorAction Stop
-        Backup-GPO -Guid $Gpo.Id -Path $BackupPath -Comment "Backup created by Backup-LabGPOs.ps1 on $Timestamp" | Out-Null
+        Write-Host "Backing up $Name"
+
+        $Gpo = Get-GPO -Name $Name
+        Backup-GPO -Guid $Gpo.Id -Path $BackupPath -Comment "Lab backup from Backup-LabGPOs.ps1 - $DateStamp" | Out-Null
 
         [PSCustomObject]@{
             GpoName    = $Name

@@ -1,29 +1,13 @@
 <#
-.SYNOPSIS
-Reports membership for expected rk-lab.local security groups.
+Exports or prints members of the main RK lab groups.
 
-.DESCRIPTION
-Builds a readable group membership report for the lab's expected security
-groups. This is useful for validating department access and GPO security
-filtering.
-
-.PARAMETER GroupName
-Optional list of group names to report. Defaults to the expected lab groups.
-
-.PARAMETER ExportCsvPath
-Optional path to export the report as CSV.
-
-.EXAMPLE
-.\Get-LabGroupMembershipReport.ps1
-
-.EXAMPLE
-.\Get-LabGroupMembershipReport.ps1 -ExportCsvPath .\group-members.csv
+Examples:
+  .\Get-LabGroupMembershipReport.ps1
+  .\Get-LabGroupMembershipReport.ps1 -ExportCsvPath .\outputs\group-membership-report.csv
 #>
 
 [CmdletBinding()]
 param (
-    [Parameter()]
-    [ValidateNotNullOrEmpty()]
     [string[]]$GroupName = @(
         "GG_IT_Admins",
         "GG_HR_FileShare_RW",
@@ -33,20 +17,18 @@ param (
         "GG_Standard_Users"
     ),
 
-    [Parameter()]
-    [ValidateNotNullOrEmpty()]
     [string]$ExportCsvPath
 )
 
 $ErrorActionPreference = "Stop"
 
-Import-Module ActiveDirectory -ErrorAction Stop
+Import-Module ActiveDirectory
 
 $Report = foreach ($Group in $GroupName) {
-    Write-Verbose "Reading members for $Group."
+    Write-Host "Checking $Group"
 
     try {
-        $Members = Get-ADGroupMember -Identity $Group -Recursive -ErrorAction Stop
+        $Members = Get-ADGroupMember -Identity $Group -Recursive
 
         if (-not $Members) {
             [PSCustomObject]@{
@@ -57,17 +39,17 @@ $Report = foreach ($Group in $GroupName) {
                 DistinguishedName = ""
                 Status            = "No members"
             }
+            continue
         }
-        else {
-            foreach ($Member in $Members) {
-                [PSCustomObject]@{
-                    GroupName         = $Group
-                    MemberName        = $Member.Name
-                    SamAccountName    = $Member.SamAccountName
-                    ObjectClass       = $Member.ObjectClass
-                    DistinguishedName = $Member.DistinguishedName
-                    Status            = "Found"
-                }
+
+        foreach ($Member in $Members) {
+            [PSCustomObject]@{
+                GroupName         = $Group
+                MemberName        = $Member.Name
+                SamAccountName    = $Member.SamAccountName
+                ObjectClass       = $Member.ObjectClass
+                DistinguishedName = $Member.DistinguishedName
+                Status            = "Found"
             }
         }
     }
@@ -84,14 +66,15 @@ $Report = foreach ($Group in $GroupName) {
 }
 
 if ($ExportCsvPath) {
-    $ExportDirectory = Split-Path -Path $ExportCsvPath -Parent
+    $Folder = Split-Path -Path $ExportCsvPath -Parent
 
-    if ($ExportDirectory -and -not (Test-Path -Path $ExportDirectory -PathType Container)) {
-        New-Item -Path $ExportDirectory -ItemType Directory -Force | Out-Null
+    if ($Folder -and -not (Test-Path -Path $Folder -PathType Container)) {
+        New-Item -Path $Folder -ItemType Directory -Force | Out-Null
     }
 
     $Report | Export-Csv -Path $ExportCsvPath -NoTypeInformation
-    Write-Verbose "Exported group membership report to $ExportCsvPath."
+    Write-Host ""
+    Write-Host "Saved report to $ExportCsvPath"
 }
 
 $Report
